@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "functions": {
+    "api/spots.js": { "maxDuration": 30 }
+  },
+  "routes": [
+    { "src": "/api/spots", "dest": "/api/spots.js" },
+    { "src": "/(.*)",      "dest": "/public/index.html" }
+  ]
+}
