@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#060606">
+<title>WALLHUNT — AI Graffiti & Urbex Scout</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060606;--s1:#0d0d0d;--s2:#141414;--s3:#1c1c1c;--b1:#1c1c1c;--b2:#282828;--y:#f5e642;--r:#e8352b;--t:#2bdbcc;--p:#9b5de5;--o:#ff7a2b;--g:#22c55e;--w:#eee;--m1:#3a3a3a;--m2:#5a5a5a;--m3:#888;--nh:52px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--w);font-family:'Space Mono',monospace;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:var(--y)}
+a{color:inherit;text-decoration:none}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:600;height:var(–nh);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;background:rgba(6,6,6,.97);border-bottom:1px solid var(–b1);backdrop-filter:blur(20px)}
+.logo{font-family:‘Bebas Neue’,sans-serif;font-size:1.4rem;letter-spacing:.08em;color:var(–y)}
+.logo em{color:var(–r);font-style:normal}
+.logo-ai{font-size:.4rem;letter-spacing:.18em;background:linear-gradient(90deg,var(–y),var(–o));color:#000;padding:.14rem .44rem;font-weight:700;vertical-align:middle;margin-left:.3rem}
+.nav-r{display:flex;gap:.5rem;align-items:center}
+.npill{font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .7rem;border:1px solid var(–b2);color:var(–m3);background:none;cursor:pointer;transition:all .2s}
+.npill:hover,.npill.on{border-color:var(–y);color:var(–y)}
+.npill.cta{background:var(–y);color:#000;border-color:var(–y);font-weight:700;font-family:‘Space Mono’,monospace}
+.hbg{display:none;flex-direction:column;gap:4px;cursor:pointer;background:none;border:none;padding:4px}
+.hbg span{display:block;width:18px;height:2px;background:var(–w)}
+.mob{display:none;position:fixed;top:var(–nh);left:0;right:0;z-index:590;background:rgba(6,6,6,.99);border-bottom:1px solid var(–b1);padding:.9rem 1rem;flex-direction:column;gap:.45rem}
+.mob.open{display:flex}
+.mob a{color:var(–m3);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.55rem 0;border-bottom:1px solid var(–b1)}
+.mob a:last-child{border:none;color:var(–y);font-weight:700}
+
+/* HERO */
+.hero{min-height:100vh;padding:var(–nh) 2rem 3rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.hero::before{content:’’;position:absolute;inset:0;background-image:linear-gradient(rgba(245,230,66,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(245,230,66,.022) 1px,transparent 1px);background-size:54px 54px;pointer-events:none}
+.hero::after{content:’’;position:absolute;top:-10%;right:-8%;width:55vw;height:55vw;border-radius:50%;background:radial-gradient(circle,rgba(245,230,66,.03) 0%,transparent 65%);pointer-events:none}
+.hk{font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(–t);margin-bottom:.8rem;opacity:0;animation:fu .5s .1s forwards;position:relative;z-index:1}
+.hh{font-family:‘Bebas Neue’,sans-serif;font-size:clamp(4rem,10vw,9.5rem);line-height:.82;letter-spacing:.02em;margin-bottom:1.1rem;opacity:0;animation:fu .6s .25s forwards;position:relative;z-index:1}
+.hh .ya{color:var(–y);display:block}
+.hh .ra{-webkit-text-stroke:2px var(–r);color:transparent;display:block}
+.hp{font-size:.72rem;line-height:1.95;color:var(–m3);max-width:480px;margin-bottom:1.4rem;opacity:0;animation:fu .6s .4s forwards;position:relative;z-index:1}
+.htags{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1.5rem;opacity:0;animation:fu .6s .5s forwards;position:relative;z-index:1}
+.htag{font-size:.46rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .55rem;border:1px solid var(–b2);color:var(–m2)}
+.htag.live{border-color:rgba(34,197,94,.35);color:var(–g)}
+.hbtns{display:flex;gap:.6rem;flex-wrap:wrap;opacity:0;animation:fu .6s .6s forwards;position:relative;z-index:1}
+.btn{font-family:‘Space Mono’,monospace;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.78rem 1.4rem;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;border:none;position:relative;-webkit-appearance:none;transition:all .15s}
+.btn-y{background:var(–y);color:#000}
+.btn-y::after{content:’’;position:absolute;top:3px;left:3px;right:-3px;bottom:-3px;background:var(–r);z-index:-1;transition:transform .15s}
+.btn-y:hover{transform:translate(-2px,-2px)}
+.btn-y:hover::after{transform:translate(2px,2px)}
+.btn-o{background:transparent;color:var(–w);border:1px solid var(–b2)}
+.btn-o:hover{border-color:var(–t);color:var(–t)}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* APP SHELL */
+#app{border-top:1px solid var(–b1)}
+
+/* Search */
+.sbar{background:var(–s1);border-bottom:1px solid var(–b1);padding:.7rem 1rem;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+#q{flex:1;min-width:160px;background:var(–bg);border:1px solid var(–b2);color:var(–w);font-family:‘Space Mono’,monospace;font-size:.65rem;padding:.6rem .85rem;outline:none;transition:border-color .2s}
+#q:focus{border-color:var(–y)}
+#q::placeholder{color:var(–m1)}
+.sbtn{background:var(–y);color:#000;font-family:‘Space Mono’,monospace;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 1rem;border:none;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:.3rem;transition:background .2s}
+.sbtn:hover{background:#ffe800}
+.sbtn:disabled{background:var(–b2);color:var(–m2);cursor:not-allowed}
+.cities{display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none;width:100%}
+.cities::-webkit-scrollbar{display:none}
+.cc{font-size:.46rem;letter-spacing:.09em;text-transform:uppercase;padding:.25rem .6rem;border:1px solid var(–b1);color:var(–m2);cursor:pointer;flex-shrink:0;background:none;white-space:nowrap;transition:all .2s}
+.cc:hover,.cc.on{border-color:var(–y);color:var(–y)}
+
+/* Sources bar */
+.srcbar{background:var(–s2);border-bottom:1px solid var(–b1);padding:.45rem 1rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.si{display:flex;align-items:center;gap:.28rem;font-size:.44rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;border:1px solid var(–b1);color:var(–m2);transition:all .3s}
+.si.run{border-color:var(–y);color:var(–y);animation:pulse 1s ease-in-out infinite}
+.si.ok{border-color:var(–g);color:var(–g)}
+.si.err{border-color:var(–r);color:var(–r)}
+.sid{width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:300px 1fr 280px;height:calc(100vh - var(–nh) - 92px - 36px);min-height:480px}
+
+/* LEFT panel */
+.pl{background:var(–s1);border-right:1px solid var(–b1);display:flex;flex-direction:column;overflow:hidden}
+.plhd{padding:.65rem .85rem;border-bottom:1px solid var(–b1);display:flex;align-items:center;justify-content:space-between}
+.plt{font-size:.48rem;letter-spacing:.16em;text-transform:uppercase;color:var(–m2)}
+.cnt{font-family:‘Bebas Neue’,sans-serif;font-size:1.3rem;color:var(–y);line-height:1}
+.frow{display:flex;border-bottom:1px solid var(–b1);overflow-x:auto;scrollbar-width:none}
+.frow::-webkit-scrollbar{display:none}
+.fb{background:none;border:none;border-right:1px solid var(–b1);color:var(–m2);font-family:‘Space Mono’,monospace;font-size:.44rem;letter-spacing:.09em;text-transform:uppercase;padding:.42rem .7rem;cursor:pointer;flex-shrink:0;transition:all .2s}
+.fb.on,.fb:hover{background:rgba(245,230,66,.06);color:var(–y)}
+.list{flex:1;overflow-y:auto}
+.list::-webkit-scrollbar{width:2px}
+.list::-webkit-scrollbar-thumb{background:var(–b2)}
+
+/* Spot item */
+.si-item{padding:.65rem .85rem;border-bottom:1px solid var(–b1);cursor:pointer;position:relative;transition:background .2s}
+.si-item:hover,.si-item.sel{background:var(–s3)}
+.si-top{display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.3rem}
+.ring{width:31px;height:31px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:‘Bebas Neue’,sans-serif;font-size:.9rem;flex-shrink:0;border:2px solid;line-height:1}
+.rh{border-color:var(–g);color:var(–g)}.rm{border-color:var(–y);color:var(–y)}.rl{border-color:var(–o);color:var(–o)}.rx{border-color:var(–r);color:var(–r)}
+.snfo{flex:1;min-width:0}
+.sname{font-family:‘Barlow Condensed’,sans-serif;font-size:.85rem;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+.sbadge{font-size:.41rem;letter-spacing:.11em;text-transform:uppercase;padding:.1rem .33rem;font-weight:700;display:inline;margin-right:.2rem}
+.bl{background:rgba(43,219,204,.1);color:var(–t)}.bt{background:rgba(245,230,66,.1);color:var(–y)}.bw{background:rgba(232,53,43,.1);color:var(–r)}.bu{background:rgba(155,93,229,.1);color:var(–p)}
+.sdesc{font-size:.52rem;color:var(–m2);line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:.25rem 0}
+.schips{display:flex;gap:.22rem;flex-wrap:wrap;margin-bottom:.3rem}
+.chip{font-size:.41rem;border:1px solid var(–b2);padding:.1rem .3rem;color:var(–m2)}
+.chip.cg{border-color:rgba(34,197,94,.3);color:var(–g)}.chip.cy{border-color:rgba(245,230,66,.3);color:var(–y)}.chip.cr{border-color:rgba(232,53,43,.3);color:var(–r)}
+.sitem-src{position:absolute;top:.45rem;right:.65rem;font-size:.36rem;letter-spacing:.07em;text-transform:uppercase;color:var(–m2)}
+.src-baza{color:var(–g)!important}.src-osm{color:var(–t)!important}.src-reddit{color:var(–o)!important}.src-wiki{color:var(–p)!important}
+
+/* Quick nav buttons on each item */
+.qnav{display:flex;gap:.22rem}
+.qnb{flex:1;font-size:.4rem;letter-spacing:.06em;text-transform:uppercase;padding:.25rem .35rem;background:var(–bg);border:1px solid var(–b2);color:var(–m2);cursor:pointer;font-family:‘Space Mono’,monospace;transition:all .2s;text-align:center;display:flex;align-items:center;justify-content:center;gap:.18rem}
+.qnb:hover{border-color:var(–y);color:var(–y)}
+
+.empty{padding:1.5rem .9rem;text-align:center;color:var(–m2);font-size:.56rem;line-height:2}
+.empty-ico{font-size:2rem;display:block;margin-bottom:.5rem}
+
+/* MAP */
+#map{height:100%;width:100%}
+.leaflet-container{background:#090909;font-family:‘Space Mono’,monospace}
+.leaflet-popup-content-wrapper{background:rgba(6,6,6,.97);border:1px solid var(–b2);border-radius:0;box-shadow:0 8px 32px rgba(0,0,0,.9);color:var(–w)}
+.leaflet-popup-tip{background:rgba(6,6,6,.97)}
+.leaflet-popup-content{margin:.75rem .95rem;min-width:190px;max-width:255px}
+.leaflet-bar a{background:var(–s1)!important;color:var(–w)!important;border-color:var(–b1)!important}
+
+/* RIGHT panel */
+.pr{background:var(–s1);border-left:1px solid var(–b1);display:flex;flex-direction:column;overflow:hidden}
+.prhd{padding:.65rem .85rem;border-bottom:1px solid var(–b1);font-size:.46rem;letter-spacing:.14em;text-transform:uppercase;color:var(–m2);flex-shrink:0}
+.prscroll{flex:1;overflow-y:auto}
+.prscroll::-webkit-scrollbar{width:2px}
+.prscroll::-webkit-scrollbar-thumb{background:var(–b2)}
+.pr-empty{padding:1.5rem .85rem;text-align:center;color:var(–m2);font-size:.54rem;line-height:1.9}
+.pr-empty span{font-size:1.6rem;display:block;margin-bottom:.5rem}
+
+/* Detail */
+.di{padding:.85rem}
+.dsec{margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:1px solid var(–b1)}
+.dsec:last-child{border:none}
+.dkick{font-size:.42rem;letter-spacing:.16em;text-transform:uppercase;margin-bottom:.3rem}
+.dtitle{font-family:‘Barlow Condensed’,sans-serif;font-size:1.2rem;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:.35rem}
+.dscore-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem}
+.dscore{font-family:‘Bebas Neue’,sans-serif;font-size:2.4rem;color:var(–y);line-height:1}
+.dscoresub{font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;color:var(–m2)}
+.dg2{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.5rem}
+.dstat{padding:.4rem;background:var(–s2);border:1px solid var(–b1)}
+.dstatv{font-size:.6rem;font-weight:700;margin-bottom:.06rem}
+.dstatl{font-size:.4rem;letter-spacing:.1em;text-transform:uppercase;color:var(–m2)}
+.ddesc{font-size:.58rem;line-height:1.75;color:var(–m3)}
+.drec{font-size:.54rem;color:var(–t);font-style:italic;margin-top:.35rem;padding:.4rem;background:rgba(43,219,204,.04);border-left:2px solid var(–t);line-height:1.65}
+
+/* Google Maps embed */
+.gmap{position:relative;margin-bottom:.6rem}
+.gmap-frame{width:100%;height:148px;border:1px solid var(–b1);background:var(–s2);overflow:hidden;position:relative}
+.gmap-frame iframe{width:100%;height:100%;border:none}
+.gmov{position:absolute;inset:0;background:rgba(6,6,6,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35rem;cursor:pointer;transition:background .25s}
+.gmov:hover{background:rgba(6,6,6,.5)}
+.gmov-ico{font-size:1.5rem}
+.gmov-lbl{font-size:.46rem;letter-spacing:.14em;text-transform:uppercase;color:var(–m3)}
+
+/* Navigation buttons grid */
+.navgrid{display:grid;grid-template-columns:1fr 1fr;gap:.28rem;margin-bottom:.55rem}
+.navbtn{display:flex;align-items:center;justify-content:center;gap:.28rem;font-family:‘Space Mono’,monospace;font-size:.49rem;letter-spacing:.06em;text-transform:uppercase;padding:.5rem;border:1px solid var(–b2);color:var(–m3);background:none;cursor:pointer;transition:all .2s}
+.navbtn:hover{border-color:currentColor}
+.nb-car{color:var(–y);border-color:rgba(245,230,66,.22)}
+.nb-bus{color:var(–t);border-color:rgba(43,219,204,.22)}
+.nb-walk{color:var(–g);border-color:rgba(34,197,94,.22)}
+.nb-sv{color:var(–p);border-color:rgba(155,93,229,.22)}
+.nb-full{grid-column:1/-1;color:var(–o);border-color:rgba(255,122,43,.22)}
+
+/* Photos */
+.photos{display:flex;gap:.28rem;overflow-x:auto;margin-bottom:.5rem;scrollbar-width:none}
+.photos::-webkit-scrollbar{display:none}
+.ph{width:72px;height:54px;flex-shrink:0;object-fit:cover;border:1px solid var(–b1);cursor:pointer;transition:border-color .2s}
+.ph:hover{border-color:var(–y)}
+.ph-ph{width:72px;height:54px;flex-shrink:0;background:var(–s3);border:1px solid var(–b1);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.1rem;font-size:.75rem}
+.ph-ph span{font-size:.38rem;color:var(–m2)}
+
+/* Lightbox */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:900;display:none;align-items:center;justify-content:center;flex-direction:column;gap:.8rem;padding:1.5rem}
+.lb.open{display:flex}
+.lb img{max-width:90vw;max-height:80vh;object-fit:contain;border:1px solid var(–b2)}
+.lb-x{position:absolute;top:.8rem;right:1rem;background:none;border:none;color:var(–w);font-size:1.4rem;cursor:pointer}
+.lb-cap{font-size:.5rem;color:var(–m3);letter-spacing:.08em;text-align:center;max-width:460px}
+
+/* Popup */
+.pu-type{font-size:.43rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.3rem}
+.pu-name{font-family:‘Barlow Condensed’,sans-serif;font-size:1.05rem;font-weight:900;text-transform:uppercase;margin-bottom:.4rem;line-height:1.05}
+.pu-row{display:flex;gap:.9rem;margin-bottom:.45rem}
+.pu-v{font-size:.6rem;font-weight:700;margin-bottom:.07rem}
+.pu-l{font-size:.41rem;letter-spacing:.09em;text-transform:uppercase;color:var(–m2)}
+.pu-desc{font-size:.56rem;line-height:1.65;color:var(–m3);border-top:1px solid var(–b1);padding-top:.4rem;margin-bottom:.45rem}
+.pu-btns{display:grid;grid-template-columns:1fr 1fr;gap:.28rem}
+.pu-btn{font-size:.46rem;letter-spacing:.06em;text-transform:uppercase;padding:.32rem;background:var(–s1);border:1px solid var(–b2);color:var(–m2);cursor:pointer;font-family:‘Space Mono’,monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.18rem}
+.pu-btn:hover{border-color:var(–y);color:var(–y)}
+.pu-nav{grid-column:1/-1;color:var(–y);border-color:rgba(245,230,66,.3)}
+.pu-nav:hover{background:rgba(245,230,66,.07)}
+
+/* Bottom bar */
+.botbar{background:var(–s2);border-top:1px solid var(–b1);padding:.4rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;min-height:36px}
+.bsrc{display:flex;align-items:center;gap:.25rem;font-size:.42rem;letter-spacing:.07em;text-transform:uppercase;color:var(–m2)}
+.bdot{width:4px;height:4px;border-radius:50%;background:currentColor}
+#status{font-size:.42rem;color:var(–m2);letter-spacing:.06em;text-transform:uppercase}
+
+/* HOW section */
+.how{padding:4.5rem 2rem;border-top:1px solid var(–b1);background:var(–s1)}
+.htg{font-size:.5rem;letter-spacing:.28em;text-transform:uppercase;color:var(–t);margin-bottom:.6rem}
+.htitle{font-family:‘Bebas Neue’,sans-serif;font-size:clamp(2rem,4vw,4rem);line-height:.92;margin-bottom:2.5rem}
+.howgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(–b1);border:1px solid var(–b1)}
+.hwc{background:var(–bg);padding:1.5rem 1.2rem}
+.hwn{font-family:‘Bebas Neue’,sans-serif;font-size:2.6rem;color:var(–b2);margin-bottom:.45rem}
+.hwi{font-size:.95rem;margin-bottom:.4rem}
+.hwt{font-family:‘Barlow Condensed’,sans-serif;font-size:.95rem;font-weight:900;text-transform:uppercase;margin-bottom:.35rem}
+.hwd{font-size:.58rem;line-height:1.75;color:var(–m2)}
+
+footer{border-top:1px solid var(–b1);padding:1.6rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;background:var(–s1)}
+.flogo{font-family:‘Bebas Neue’,sans-serif;font-size:1.1rem;color:var(–y)}
+.flogo em{color:var(–r);font-style:normal}
+.fcopy{font-size:.44rem;color:var(–m2);letter-spacing:.07em}
+.flinks{display:flex;gap:1rem}
+.flinks a{font-size:.44rem;color:var(–m2);letter-spacing:.09em;text-transform:uppercase;transition:color .2s}
+.flinks a:hover{color:var(–y)}
+
+/* Responsive */
+@media(max-width:1080px){.layout{grid-template-columns:270px 1fr 250px}}
+@media(max-width:820px){
+.layout{grid-template-columns:1fr;height:auto}
+.pl{max-height:240px;border-right:none;border-bottom:1px solid var(–b1)}
+#map{height:46vh;min-height:280px}
+.pr{max-height:300px;border-left:none;border-top:1px solid var(–b1)}
+.hero{padding-left:1.2rem;padding-right:1.2rem}
+.hh{font-size:clamp(3.5rem,13vw,5.5rem)}
+}
+@media(max-width:520px){
+.nav-r .npill:not(.cta){display:none}
+.hbg{display:flex}
+.sbar{flex-wrap:wrap}
+#q{min-width:100%}
+.sbtn{width:100%;justify-content:center}
+.navgrid{grid-template-columns:1fr}
+.nb-car,.nb-bus,.nb-walk,.nb-sv{grid-column:auto}
+}
+</style>
+
+</head>
+<body>
+
+<nav>
+  <div class="logo">WALL<em>HUNT</em><span class="logo-ai">AI</span></div>
+  <div class="nav-r">
+    <a href="#app" class="npill">🗺️ Mapa</a>
+    <a href="#how" class="npill">System</a>
+    <a href="#app" class="npill cta">Szukaj →</a>
+    <button class="hbg" id="hbg"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mob" id="mob">
+  <a href="#app">🗺️ Mapa AI</a>
+  <a href="#how">Jak działa</a>
+  <a href="#app">Szukaj bezpłatnie →</a>
+</div>
+
+<!-- HERO -->
+
+<section class="hero">
+  <p class="hk">// AI Scout · OSM · Reddit · Wikimedia · Google Maps nawigacja · 0 zł</p>
+  <h1 class="hh"><span>AI SCOUT</span><span class="ya">GRAFFITI</span><span class="ra">& URBEX</span></h1>
+  <p class="hp">Backend przeszukuje OpenStreetMap, Reddit i Wikimedia. Darmowe AI ocenia każdy spot. Google Maps nawigacja jednym kliknięciem — bez rejestracji, bez kluczy API.</p>
+  <div class="htags">
+    <span class="htag live">🟢 OpenStreetMap</span>
+    <span class="htag live">🟢 Reddit API</span>
+    <span class="htag live">🟢 Wikimedia</span>
+    <span class="htag live">🟢 Pollinations AI (free)</span>
+    <span class="htag live">🟢 Google Maps nawigacja</span>
+    <span class="htag">📍 Warszawa & Mazowsze</span>
+  </div>
+  <div class="hbtns">
+    <a href="#app" class="btn btn-y">🤖 Uruchom AI Scout</a>
+    <a href="#how" class="btn btn-o">Jak to działa →</a>
+  </div>
+</section>
+
+<!-- APP -->
+
+<div id="app">
+  <div class="sbar">
+    <input id="q" type="text" placeholder="Dzielnica lub miasto — np. Praga-Północ, Wola, Pruszków..." autocomplete="off" spellcheck="false">
+    <button class="sbtn" id="sbtn" onclick="scan()"><span id="stxt">🤖 Skanuj AI</span></button>
+    <div class="cities">
+      <div class="cc on" onclick="pick('Warszawa centrum',this)">Warszawa</div>
+      <div class="cc" onclick="pick('Praga-Północ Warszawa',this)">Praga</div>
+      <div class="cc" onclick="pick('Wola Warszawa',this)">Wola</div>
+      <div class="cc" onclick="pick('Mokotów Warszawa',this)">Mokotów</div>
+      <div class="cc" onclick="pick('Żoliborz Warszawa',this)">Żoliborz</div>
+      <div class="cc" onclick="pick('Pruszków',this)">Pruszków</div>
+      <div class="cc" onclick="pick('Piastów',this)">Piastów</div>
+      <div class="cc" onclick="pick('Grodzisk Mazowiecki',this)">Grodzisk</div>
+      <div class="cc" onclick="pick('Milanówek',this)">Milanówek</div>
+    </div>
+  </div>
+
+  <div class="srcbar">
+    <div class="si" id="si-baza"><div class="sid"></div>Baza</div>
+    <div class="si" id="si-osm"><div class="sid"></div>OSM</div>
+    <div class="si" id="si-reddit"><div class="sid"></div>Reddit</div>
+    <div class="si" id="si-wiki"><div class="sid"></div>Wikimedia</div>
+    <div class="si" id="si-ai"><div class="sid"></div>AI</div>
+    <div class="si" id="si-maps"><div class="sid"></div>Google Maps</div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT -->
+    <div class="pl">
+      <div class="plhd"><span class="plt">Spoty</span><span class="cnt" id="cnt">0</span></div>
+      <div class="frow">
+        <button class="fb on" onclick="filt(this,'all')">Wszystkie</button>
+        <button class="fb" onclick="filt(this,'graffiti_legal')">🟢 Legal</button>
+        <button class="fb" onclick="filt(this,'graffiti_tolerated')">🟡 Toler.</button>
+        <button class="fb" onclick="filt(this,'graffiti_wild')">🔴 Dzikie</button>
+        <button class="fb" onclick="filt(this,'urbex')">🏚️ Urbex</button>
+      </div>
+      <div class="list" id="list">
+        <div class="empty"><span class="empty-ico">🗺️</span>Wybierz miasto lub wpisz lokalizację<br>i kliknij <strong style="color:var(--y)">Skanuj AI</strong></div>
+      </div>
+    </div>
+
+```
+<!-- MAP -->
+<div style="position:relative"><div id="map"></div></div>
+
+<!-- RIGHT -->
+<div class="pr">
+  <div class="prhd">📍 Szczegóły · Nawigacja · Zdjęcia</div>
+  <div class="prscroll" id="prscroll">
+    <div class="pr-empty"><span>👆</span>Kliknij spot na liście lub mapie</div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <div class="botbar">
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <div class="bsrc" style="color:var(--g)"><div class="bdot"></div>OSM</div>
+      <div class="bsrc" style="color:var(--o)"><div class="bdot"></div>Reddit</div>
+      <div class="bsrc" style="color:var(--p)"><div class="bdot"></div>Wikimedia</div>
+      <div class="bsrc" style="color:var(--y)"><div class="bdot"></div>Pollinations AI</div>
+      <div class="bsrc" style="color:var(--t)"><div class="bdot"></div>Google Maps</div>
+    </div>
+    <div id="status">Gotowy · Bez rejestracji · 100% darmowe</div>
+  </div>
+</div>
+
+<!-- HOW -->
+
+<section class="how" id="how">
+  <p class="htg">// Architektura</p>
+  <h2 class="htitle">JAK DZIAŁA<br><span style="color:var(--y)">AI BACKEND</span></h2>
+  <div class="howgrid">
+    <div class="hwc"><div class="hwn">01</div><div class="hwi">📍</div><div class="hwt">Geocoding</div><p class="hwd">Nominatim (OSM) zamienia nazwę miasta na GPS.</p></div>
+    <div class="hwc"><div class="hwn">02</div><div class="hwi">🗺️</div><div class="hwt">Overpass/OSM</div><p class="hwd">Skanuje OSM w 3km — murki, tunele, hale, skateparki, opuszczone.</p></div>
+    <div class="hwc"><div class="hwn">03</div><div class="hwi">💬</div><div class="hwt">Reddit API</div><p class="hwd">Przeszukuje r/Polska i r/Warsaw — posty o graffiti i spotach.</p></div>
+    <div class="hwc"><div class="hwn">04</div><div class="hwi">📸</div><div class="hwt">Wikimedia</div><p class="hwd">Geosearch zdjęć z Wikimedia Commons dla każdego spotu.</p></div>
+    <div class="hwc"><div class="hwn">05</div><div class="hwi">🤖</div><div class="hwt">Pollinations AI</div><p class="hwd">Darmowe AI bez klucza. Score 1-10, zaludnienie, ryzyko, rec.</p></div>
+    <div class="hwc"><div class="hwn">06</div><div class="hwi">🚗</div><div class="hwt">Google Maps</div><p class="hwd">Linki nawigacyjne: autem, komunikacją, pieszo, Street View.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="flogo">WALL<em>HUNT</em></div>
+  <div class="fcopy">© 2025 WallHunt AI · Warszawa · MIT License</div>
+  <div class="flinks"><a href="#">GitHub</a><a href="#">Instagram</a></div>
+</footer>
+
+<div class="lb" id="lb" onclick="closeLb()">
+  <button class="lb-x" onclick="closeLb()">✕</button>
+  <img id="lbimg" src="" alt="">
+  <div class="lb-cap" id="lbcap"></div>
+</div>
+
+<script>
+// ── MAP ───────────────────────────────────────────────────
+const map = L.map('map',{center:[52.2297,21.0122],zoom:12,attributionControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© <a href="https://openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com">CARTO</a>'}).addTo(map);
+
+// ── CONSTANTS ─────────────────────────────────────────────
+const C={graffiti_legal:'#2bdbcc',graffiti_tolerated:'#f5e642',graffiti_wild:'#e8352b',urbex:'#9b5de5',unknown:'#ff7a2b'};
+const L2={graffiti_legal:'🟢 Legal',graffiti_tolerated:'🟡 Tolerowany',graffiti_wild:'🔴 Dzikie',urbex:'🏚️ Urbex',unknown:'❓'};
+const B={graffiti_legal:'bl',graffiti_tolerated:'bt',graffiti_wild:'bw',urbex:'bu',unknown:'bt'};
+let ALL=[],MRK=[],FILT='all';
+
+// ── ICON ──────────────────────────────────────────────────
+function mkIcon(type,score){
+  const c=C[type]||C.unknown,sz=score>=8?14:score>=6?11:9;
+  return L.divIcon({className:'',
+    html:`<div style="width:${sz}px;height:${sz}px;background:${c};border-radius:50%;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 0 ${score*2}px ${c}55"></div>`,
+    iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz-2]});
+}
+
+// ── SOURCE INDICATORS ─────────────────────────────────────
+function ss(id,st){const el=document.getElementById('si-'+id);if(!el)return;el.classList.remove('run','ok','err');if(st)el.classList.add(st);}
+function setStatus(t){document.getElementById('status').textContent=t;}
+
+// ── SCAN ──────────────────────────────────────────────────
+async function scan(){
+  const qv=document.getElementById('q').value.trim()||'Warszawa';
+  const btn=document.getElementById('sbtn'),txt=document.getElementById('stxt');
+  btn.disabled=true;txt.textContent='⏳ Skanowanie...';
+  setStatus('Skanowanie: '+qv+'...');
+  ['baza','osm','reddit','wiki','ai','maps'].forEach(id=>ss(id,''));
+  ['baza','osm','reddit','wiki'].forEach(id=>ss(id,'run'));
+
+  try{
+    const res=await fetch(`/api/spots?q=${encodeURIComponent(qv)}`);
+    const data=await res.json();
+    ss('baza','ok');
+    ss('osm',data.sources?.osm>0?'ok':'err');
+    ss('reddit',data.sources?.reddit>0?'ok':'err');
+    ss('wiki',data.sources?.wiki>0?'ok':'err');
+    ss('ai','run');
+    await new Promise(r=>setTimeout(r,300));
+    ss('ai','ok');ss('maps','run');
+    ALL=data.spots||[];
+    renderSpots(ALL);
+    if(data.location?.lat&&data.location?.lon)map.setView([data.location.lat,data.location.lon],13,{animate:true});
+    ss('maps','ok');
+    setStatus(`✅ ${ALL.length} spotów · ${data.location?.name||qv} · Kliknij spot → nawigacja`);
+  }catch(e){
+    console.error(e);
+    ['osm','reddit','wiki','ai'].forEach(id=>ss(id,'err'));
+    setStatus('Błąd: '+e.message);
+    document.getElementById('list').innerHTML=`<div class="empty"><span class="empty-ico">⚠️</span>Błąd połączenia z backendem.<br><span style="color:var(--y)">Uruchom: vercel dev</span></div>`;
+  }finally{btn.disabled=false;txt.textContent='🤖 Skanuj AI';}
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function renderSpots(spots){
+  MRK.forEach(m=>map.removeLayer(m));MRK=[];
+  document.getElementById('cnt').textContent=spots.length;
+  if(!spots.length){document.getElementById('list').innerHTML='<div class="empty"><span class="empty-ico">🔍</span>Brak wyników.</div>';return;}
+  const sorted=[...spots].sort((a,b)=>(b.score||5)-(a.score||5));
+  document.getElementById('list').innerHTML=sorted.map((s,i)=>itemHTML(s,i)).join('');
+  sorted.forEach((s,idx)=>{
+    if(!s.lat||!s.lon)return;
+    const m=L.marker([s.lat,s.lon],{icon:mkIcon(s.type||'unknown',s.score||5)}).addTo(map).bindPopup(popupHTML(s,idx),{maxWidth:255});
+    m.on('click',()=>sel(idx));MRK.push(m);
+  });
+  ALL=sorted;
+  if(spots.length>1){const ll=spots.filter(s=>s.lat&&s.lon).map(s=>[s.lat,s.lon]);if(ll.length)map.fitBounds(ll,{padding:[35,35],maxZoom:14});}
+}
+
+// ── ITEM HTML ─────────────────────────────────────────────
+function itemHTML(s,i){
+  const sc=s.score||5,rc=sc>=8?'rh':sc>=6?'rm':sc>=4?'rl':'rx';
+  const bc=B[s.type]||'bt',lbl=L2[s.type]||'❓';
+  const pc=s.zaludnienie==='niskie'?'cg':s.zaludnienie==='wysokie'?'cr':'cy';
+  const rk=s.ryzyko==='niskie'?'cg':s.ryzyko==='wysokie'?'cr':'cy';
+  const navUrl=s.navCar||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
+  const busUrl=s.navTransit||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=transit`;
+  const mapUrl=s.mapsUrl||`https://www.google.com/maps?q=${s.lat},${s.lon}`;
+  const srcCls='src-'+(s.source||'baza');
+  return `<div class="si-item" data-idx="${i}" onclick="sel(${i})">
+  <span class="sitem-src ${srcCls}">${s.source||'baza'}</span>
+  <div class="si-top">
+    <div class="ring ${rc}">${sc}</div>
+    <div class="snfo">
+      <div class="sname">${s.name}</div>
+      <div><span class="sbadge ${bc}">${lbl}</span></div>
+      <div class="sdesc">${s.opis||''}</div>
+    </div>
+  </div>
+  <div class="schips">
+    ${s.zaludnienie?`<span class="chip ${pc}">👥 ${s.zaludnienie}</span>`:''}
+    ${s.dostepnosc?`<span class="chip">🚶 ${s.dostepnosc}</span>`:''}
+    ${s.ryzyko?`<span class="chip ${rk}">⚡ ${s.ryzyko}</span>`:''}
+  </div>
+  <div class="qnav">
+    <a class="qnb" href="${navUrl}" target="_blank" onclick="event.stopPropagation()">🚗 Jedź</a>
+    <a class="qnb" href="${busUrl}" target="_blank" onclick="event.stopPropagation()">🚇 Bus/Metro</a>
+    <a class="qnb" href="${mapUrl}" target="_blank" onclick="event.stopPropagation()">📍 Mapa</a>
+  </div>
+</div>`;
+}
+
+// ── POPUP ─────────────────────────────────────────────────
+function popupHTML(s,idx){
+  const c=C[s.type]||C.unknown,lbl=L2[s.type]||'❓';
+  const pc=s.zaludnienie==='niskie'?'#22c55e':s.zaludnienie==='wysokie'?'#e8352b':'#f5e642';
+  const rk=s.ryzyko==='niskie'?'#22c55e':s.ryzyko==='wysokie'?'#e8352b':'#f5e642';
+  const navUrl=s.navCar||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
+  const busUrl=s.navTransit||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=transit`;
+  const svUrl=s.streetView||`https://www.google.com/maps?layer=c&cbll=${s.lat},${s.lon}`;
+  return `<div class="pu-type" style="color:${c}">${lbl}</div>
+<div class="pu-name">${s.name}</div>
+<div class="pu-row">
+  <div><div class="pu-v" style="color:#f5e642">${s.score||5}/10</div><div class="pu-l">Score</div></div>
+  <div><div class="pu-v" style="color:${pc}">${s.zaludnienie||'?'}</div><div class="pu-l">Zaludn.</div></div>
+  <div><div class="pu-v" style="color:${rk}">${s.ryzyko||'?'}</div><div class="pu-l">Ryzyko</div></div>
+</div>
+<div class="pu-desc">${s.opis||''}</div>
+<div class="pu-btns">
+  <a class="pu-btn pu-nav" href="${navUrl}" target="_blank">🚗 Nawiguj autem →</a>
+  <a class="pu-btn" href="${busUrl}" target="_blank">🚇 Komunikacja</a>
+  <button class="pu-btn" onclick="sel(${idx})">📋 Szczegóły AI</button>
+  <a class="pu-btn" href="${svUrl}" target="_blank">🏙️ Street View</a>
+</div>`;
+}
+
+// ── SELECT SPOT ───────────────────────────────────────────
+async function sel(idx){
+  document.querySelectorAll('.si-item').forEach(el=>el.classList.remove('sel'));
+  const item=document.querySelector(`.si-item[data-idx="${idx}"]`);
+  if(item){item.classList.add('sel');item.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  const s=ALL[idx];
+  if(!s)return;
+  if(MRK[idx]){MRK[idx].openPopup();map.setView([s.lat,s.lon],15,{animate:true});}
+
+  const c=C[s.type]||C.unknown,lbl=L2[s.type]||'❓';
+  const pc=s.zaludnienie==='niskie'?'#22c55e':s.zaludnienie==='wysokie'?'#e8352b':'#f5e642';
+  const rk=s.ryzyko==='niskie'?'#22c55e':s.ryzyko==='wysokie'?'#e8352b':'#f5e642';
+  const ac=s.dostepnosc==='latwa'?'#22c55e':s.dostepnosc==='trudna'?'#e8352b':'#f5e642';
+  const navUrl=s.navCar||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
+  const busUrl=s.navTransit||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=transit`;
+  const walkUrl=s.navWalk||`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=walking`;
+  const svUrl=s.streetView||`https://www.google.com/maps?layer=c&cbll=${s.lat},${s.lon}`;
+  const mUrl=s.mapsUrl||`https://www.google.com/maps?q=${s.lat},${s.lon}`;
+
+  document.getElementById('prscroll').innerHTML=`<div class="di">
+  <div class="dsec">
+    <div class="dkick" style="color:${c}">${lbl}</div>
+    <div class="dtitle">${s.name}</div>
+    <div class="dscore-row"><div class="dscore">${s.score||5}</div><div><div style="font-size:.55rem;color:var(--m3)">AI Score</div><div class="dscoresub">Pollinations AI</div></div></div>
+    <div class="dg2">
+      <div class="dstat"><div class="dstatv" style="color:${pc}">${s.zaludnienie||'?'}</div><div class="dstatl">Zaludnienie</div></div>
+      <div class="dstat"><div class="dstatv" style="color:${ac}">${s.dostepnosc||'?'}</div><div class="dstatl">Dostępność</div></div>
+      <div class="dstat"><div class="dstatv" style="color:${rk}">${s.ryzyko||'?'}</div><div class="dstatl">Ryzyko</div></div>
+      <div class="dstat"><div class="dstatv" style="font-size:.5rem;color:var(--m2)">${(s.lat||0).toFixed(5)}, ${(s.lon||0).toFixed(5)}</div><div class="dstatl">GPS</div></div>
+    </div>
+    <div class="ddesc">${s.opis||''}</div>
+    ${s.rec?`<div class="drec">💡 ${s.rec}</div>`:''}
+    <div style="margin-top:.45rem;display:flex;gap:.25rem;flex-wrap:wrap">
+      <span style="font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border:1px solid var(--b2);color:var(--m2)">📡 ${s.source||'baza'}</span>
+      ${s.url?`<a href="${s.url}" target="_blank" style="font-size:.42rem;padding:.1rem .35rem;border:1px solid rgba(255,122,43,.3);color:var(--o)">Reddit ↗</a>`:''}
+    </div>
+  </div>
+
+  <div class="dsec">
+    <div class="dkick">🗺️ Google Maps</div>
+    <div class="gmap">
+      <div class="gmap-frame" id="gmf">
+        <iframe id="gmif" src="" loading="lazy" title="Google Maps" allowfullscreen></iframe>
+        <div class="gmov" id="gmov" onclick="loadMap('${s.lat}','${s.lon}')">
+          <span class="gmov-ico">🗺️</span>
+          <span class="gmov-lbl">Kliknij by załadować mapę</span>
+        </div>
+      </div>
+    </div>
+    <div class="navgrid">
+      <a class="navbtn nb-car" href="${navUrl}" target="_blank">🚗 Autem</a>
+      <a class="navbtn nb-bus" href="${busUrl}" target="_blank">🚇 Komunikacją</a>
+      <a class="navbtn nb-walk" href="${walkUrl}" target="_blank">🚶 Pieszo</a>
+      <a class="navbtn nb-sv" href="${svUrl}" target="_blank">🏙️ Street View</a>
+      <a class="navbtn nb-full" href="${mUrl}" target="_blank">📍 Otwórz w Google Maps</a>
+    </div>
+  </div>
+
+  <div class="dsec">
+    <div class="dkick">📸 Zdjęcia (Wikimedia Commons)</div>
+    <div class="photos" id="ph">
+      <div class="ph-ph">⏳<span>ładowanie</span></div>
+      <div class="ph-ph">⏳<span>zdjęć</span></div>
+      <div class="ph-ph">⏳<span>...</span></div>
+    </div>
+    <div style="font-size:.44rem;color:var(--m2)">Wikimedia Commons · CC License</div>
+  </div>
+</div>`;
+
+  loadPhotos(s.lat,s.lon);
+}
+
+function loadMap(lat,lon){
+  const el=document.getElementById('gmif'),ov=document.getElementById('gmov');
+  if(el)el.src=`https://maps.google.com/maps?q=${lat},${lon}&z=16&output=embed`;
+  if(ov){ov.style.opacity='0';ov.style.pointerEvents='none';}
+}
+
+async function loadPhotos(lat,lon){
+  const ph=document.getElementById('ph');if(!ph)return;
+  try{
+    const r=await fetch(`/api/spots?photos=1&lat=${lat}&lon=${lon}&radius=400`);
+    const d=await r.json();
+    const photos=d.photos||[];
+    if(!photos.length){ph.innerHTML=`<div style="font-size:.54rem;color:var(--m2);padding:.4rem">Brak zdjęć w Wikimedia w tej okolicy.</div>`;return;}
+    ph.innerHTML=photos.map(p=>`<img class="ph" src="${p.thumb}" alt="${p.title||''}" title="${p.title||''}" onclick="openLb('${p.full}','${(p.title||'').replace(/'/g,"\\'")} · ${p.license||''}')" onerror="this.style.display='none'">`).join('');
+  }catch(_){ph.innerHTML=`<div style="font-size:.54rem;color:var(--m2);padding:.4rem">Błąd ładowania zdjęć.</div>`;}
+}
+
+function openLb(src,cap){document.getElementById('lbimg').src=src;document.getElementById('lbcap').textContent=cap;document.getElementById('lb').classList.add('open');}
+function closeLb(){document.getElementById('lb').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLb();});
+
+function filt(btn,type){
+  FILT=type;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  renderSpots(type==='all'?ALL:ALL.filter(s=>(s.type||'unknown')===type));
+}
+
+function pick(city,el){
+  document.getElementById('q').value=city;
+  document.querySelectorAll('.cc').forEach(c=>c.classList.remove('on'));el.classList.add('on');
+  scan();
+}
+
+document.getElementById('hbg').addEventListener('click',()=>document.getElementById('mob').classList.toggle('open'));
+document.addEventListener('click',e=>{if(!document.getElementById('hbg').contains(e.target)&&!document.getElementById('mob').contains(e.target))document.getElementById('mob').classList.remove('open');});
+document.querySelectorAll('.mob a').forEach(a=>a.addEventListener('click',()=>document.getElementById('mob').classList.remove('open')));
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')scan();});
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}}));
+</script>
+
+</body>
+</html>
